@@ -32,30 +32,6 @@ var DEFAULT_SETTINGS = {
     tokenDelimiter: ",",
     preventDuplicates: false,
 
-	//custom feature
-	redirectOnClick: false,
-	showDropdownOnFocus: false,
-	type: null,
-	bottomText: null,
-	allowInsert: false,
-	linkedText: false,
-	placeholderText: null,
-	/**
-	 * invokerText:
-	 * [string]. text to display in text box that if clicked upon, 
-	 * opens a result menu with pre-populated entries. 
-	 * if null, then no placeholder text displayed in text box. 
-	 */
-	invokerText:null,
-	/**
-	 * prePopulateMenu
-	 * [string in JSON format]. The JSON array of entries to populate the text box. 
-	 * Each JSON entry will be in its own token. Default is: null
-	 */
-	
-	prePopulateMenu: null,
-		
-		
 	// Output settings
     tokenValue: "id",
 
@@ -67,10 +43,8 @@ var DEFAULT_SETTINGS = {
     idPrefix: "token-input-",
 
 	// Formatters
-    resultsFormatter: function(item,type){
-        return "<li>" + item[this.propertyToSearch]+ "</li>";
-    },
-    tokenFormatter: function(item) { return "<li><p>" + item[this.propertyToSearch] + "</p></li>"; },
+    resultsFormatter: function(item){ return "<li>" + item[this.propertyToSearch]+ "</li>" },
+    tokenFormatter: function(item) { return "<li><p>" + item[this.propertyToSearch] + "</p></li>" },
 
 	// Callbacks
     onResult: null,
@@ -143,7 +117,7 @@ var methods = {
     get: function() {
     	return this.data("tokenInputObject").getTokens();
    	}
-};
+}
 
 // Expose the .tokenInput function to jQuery as a plugin
 $.fn.tokenInput = function (method) {
@@ -210,40 +184,20 @@ $.TokenList = function (input, url_or_data, settings) {
     var timeout;
     var input_val;
 
-	if(settings.placeholderText !== null) hidTokenFirst='style="display:none; vertical-align:middle;"';
-	else hidTokenFirst='';
     // Create a new text input an attach keyup events
-    var input_box = $("<input type=\"text\" "+hidTokenFirst+" autocomplete=\"off\" />")
+    var input_box = $("<input type=\"text\"  autocomplete=\"off\">")
         .css({
-            outline: "none",
-            width: 50
+            outline: "none"
         })
         .attr("id", settings.idPrefix + input.id)
         .focus(function () {
-			if(settings.linkedText){
-				$(this).val('');
-                run_search('');
-			}
-            if (settings.showDropdownOnFocus) {
-                run_search('');
-            }
-            else if (settings.tokenLimit === null || settings.tokenLimit !== token_count) {
+            if (settings.tokenLimit === null || settings.tokenLimit !== token_count) {
                 show_dropdown_hint();
             }
         })
         .blur(function () {
-			if(settings.placeholderText !== null){
-				//console.log($(this));
-				if ($(this).val() === '') {
-					input_box.hide();
-					aLinked.show();
-				}
-			}
-            if(settings.invokerText !== null){
-				input_box.hide();
-				menuLink.show();
-			}
             hide_dropdown();
+            $(this).val("");
         })
         .bind("keyup keydown blur update", resize_input)
         .keydown(function (event) {
@@ -278,14 +232,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
                         if(event.keyCode === KEY.DOWN || event.keyCode === KEY.RIGHT) {
                             dropdown_item = $(selected_dropdown_item).next();
-                            if (dropdown_item.hasClass('heading')) {
-                                dropdown_item = $(selected_dropdown_item).next().next();
-                            }
                         } else {
                             dropdown_item = $(selected_dropdown_item).prev();
-                            if (dropdown_item.hasClass('heading')) {
-                                dropdown_item = $(selected_dropdown_item).prev().prev();
-                            }
                         }
 
                         if(dropdown_item.length) {
@@ -319,45 +267,8 @@ $.TokenList = function (input, url_or_data, settings) {
                 case KEY.ENTER:
                 case KEY.NUMPAD_ENTER:
                 case KEY.COMMA:
-
-                  //DMITRY: Added support for ENTER key in search
-                  //if(!selected_dropdown_item && (event.keyCode === KEY.ENTER || event.keyCode === KEY.NUMPAD_ENTER) && settings.redirectOnClick) {
-                  //	alert('1'+$(this).val());
-                  //} else {
-                  //	alert('2'+$(this).val());
-                  //}
-                  //setTimeout(function() {},200);
-                  /*
-                  if (!selected_dropdown_item && (event.keyCode === KEY.ENTER || event.keyCode === KEY.NUMPAD_ENTER) 
-                  	&& settings.redirectOnClick) {
-                  	var full_search_url = $(settings.bottomText).attr('href')+$(this).val();
-                    //window.location.replace(full_search_url);
-                    hidden_input.change();
-                    return false;
-                  }
-                  */
-					
-                  if (settings.allowInsert) {
-                      var new_token = insert_token({id: 0, name: this.value});
-                      $(this).val('');
-                      settings.onAdd(new_token);
-                      //alert(1);
-                  }
-                  if(selected_dropdown_item && !settings.redirectOnClick) {
+                  if(selected_dropdown_item) {
                     add_token($(selected_dropdown_item).data("tokeninput"));
-                    hidden_input.change();
-                    //alert(2);
-                    return false;
-                  }
-                  else if(selected_dropdown_item && settings.redirectOnClick) {
-                  	//alert($(selected_dropdown_item).html());
-                  	var redir_url = $(selected_dropdown_item).find('a').attr('href');
-                  	if (redir_url) {
-                    	window.location.replace($(selected_dropdown_item).find('a').attr('href'));
-                    } else {
-                    	var full_search_url = $(settings.bottomText).attr('href')+''+$(this).val();
-                    	window.location.replace(full_search_url);
-                    }
                     hidden_input.change();
                     return false;
                   }
@@ -366,7 +277,6 @@ $.TokenList = function (input, url_or_data, settings) {
                 case KEY.ESCAPE:
                   hide_dropdown();
                   return true;
-                  break;
 
                 default:
                     if(String.fromCharCode(event.which)) {
@@ -392,9 +302,9 @@ $.TokenList = function (input, url_or_data, settings) {
     var selected_token = null;
     var selected_token_index = 0;
     var selected_dropdown_item = null;
+
     // The list to store the token items in
     var token_list = $("<ul />")
-    	.css('width',$(input).width())
         .addClass(settings.classes.tokenList)
         .click(function (event) {
             var li = $(event.target).closest("li");
@@ -429,7 +339,7 @@ $.TokenList = function (input, url_or_data, settings) {
         .addClass(settings.classes.inputToken)
         .appendTo(token_list)
         .append(input_box);
-    
+
     // The list to store the dropdown items in
     var dropdown = $("<div>")
         .addClass(settings.classes.dropdown)
@@ -443,7 +353,7 @@ $.TokenList = function (input, url_or_data, settings) {
             position: "absolute",
             top: -9999,
             left: -9999,
-            width: input_box.css('width'),
+            width: "auto",
             fontSize: input_box.css("fontSize"),
             fontFamily: input_box.css("fontFamily"),
             fontWeight: input_box.css("fontWeight"),
@@ -451,42 +361,6 @@ $.TokenList = function (input, url_or_data, settings) {
             whiteSpace: "nowrap"
         });
 
-    if(settings.placeholderText !== null) {
-        if (settings.linkedText) {
-            var aLinked = $('<a />')
-                .addClass('linkedToken')
-                .addClass('unselectable')
-                .appendTo(input_token)
-                .prepend(settings.placeholderText)
-                .click(function(){
-                    aLinked.hide();
-                    input_box.show();
-                    input_box.focus();
-                });
-        } else {
-            var aLinked = $('<span />')
-                .addClass('autocomplete_placeholder')
-                .addClass('unselectable')
-                .appendTo(input_token)
-                .prepend(settings.placeholderText)
-                .click(function(){
-                    aLinked.hide();
-                    input_box.show();
-                    input_box.focus();
-                });
-        }
-    };
-   
-    if(settings.invokerText !== null) {
-	    var menuLink = $('<a href="javascript:;"/>')
-	        .appendTo(input_token)
-	        .prepend(settings.invokerText)
-	        .click(function(){
-	        	menuLink.hide();
-	            input_box.show();
-	            input_box.focus();
-	        });
-    }
     // Pre-populate list if items exist
     hidden_input.val("");
     var li_data = settings.prePopulate || hidden_input.data("pre");
@@ -515,11 +389,11 @@ $.TokenList = function (input, url_or_data, settings) {
                 delete_token($(this));
             }
         });
-    };
+    }
 
     this.add = function(item) {
         add_token(item);
-    };
+    }
 
     this.remove = function(item) {
         token_list.children("li").each(function() {
@@ -537,11 +411,11 @@ $.TokenList = function (input, url_or_data, settings) {
                 }
             }
         });
-    };
-
+    }
+    
     this.getTokens = function() {
    		return saved_tokens;
-   	};
+   	}
 
     //
     // Private functions
@@ -561,7 +435,7 @@ $.TokenList = function (input, url_or_data, settings) {
         // Enter new content into resizer and resize input accordingly
         var escaped = input_val.replace(/&/g, '&amp;').replace(/\s/g,' ').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         input_resizer.html(escaped);
-        //input_box.width(input_resizer.width());
+        input_box.width(input_resizer.width() + 30);
     }
 
     function is_printable_character(keycode) {
@@ -759,8 +633,7 @@ $.TokenList = function (input, url_or_data, settings) {
                 position: "absolute",
                 top: $(token_list).offset().top + $(token_list).outerHeight(),
                 left: $(token_list).offset().left,
-                zindex: 999,
-                width: $(input).width()
+                zindex: 999
             })
             .show();
     }
@@ -783,7 +656,7 @@ $.TokenList = function (input, url_or_data, settings) {
     function highlight_term(value, term) {
         return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<b>$1</b>");
     }
-
+    
     function find_value_and_highlight_term(template, value, term) {
         return template.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + value + ")(?![^<>]*>)(?![^&;]+;)", "g"), highlight_term(value, term));
     }
@@ -791,56 +664,31 @@ $.TokenList = function (input, url_or_data, settings) {
     // Populate the results dropdown with some results
     function populate_dropdown (query, results) {
         if(results && results.length) {
-            //dropdown.empty();
+            dropdown.empty();
             var dropdown_ul = $("<ul>")
-                //.appendTo(dropdown)
+                .appendTo(dropdown)
                 .mouseover(function (event) {
                     select_dropdown_item($(event.target).closest("li"));
                 })
                 .mousedown(function (event) {
-					if (settings.redirectOnClick) {
-						window.location.replace($(event.target).closest("li").find('a').attr('href'));
-					} else {
-						add_token($(event.target).closest("li").data("tokeninput"));
-						hidden_input.change();
-					}
+                    add_token($(event.target).closest("li").data("tokeninput"));
+                    hidden_input.change();
                     return false;
-                });
-                //.hide();
+                })
+                .hide();
 
             $.each(results, function(index, value) {
                 var this_li = settings.resultsFormatter(value);
-				if(value.type=='heading'){
-					this_li = find_value_and_highlight_term(this_li ,value[settings.propertyToSearch], query);
-                    this_li = $(this_li);
-				}
-				else{
-					if (settings.type === 'search') {
-                        //alert($(find_value_and_highlight_term(this_li,value.name, query) + '</a></div>').html());
-                        //this_li = '<div class="inlinediv"><img src="'+value.extra2+'" title="'+value.extra2+'" width="30" height="30" alt="" /></div><div class="inlinediv label"><a href="'+value.extra3+'"></a></div>';
-						this_li = $(this_li).html('<div class="inlinediv"><img src="'+value.extra2+'" title="'+value.extra2+'" width="30" height="30" alt="" /></div><div class="inlinediv label"><a href="'+value.extra3+'">' + $(find_value_and_highlight_term(this_li,value.name, query)).html() + '</a></div>');
-					}
-					else{
-						this_li = find_value_and_highlight_term(this_li ,value[settings.propertyToSearch], query);
-                        this_li = $(this_li);
-					}
-				}
-
-                //this_li = $(this_li).appendTo(dropdown_ul);
-                this_li.appendTo(dropdown_ul);
-                if (value.type=='heading'){
-                    this_li.addClass('heading');
-                }
-
+                
+                this_li = find_value_and_highlight_term(this_li ,value[settings.propertyToSearch], query);            
+                
+                this_li = $(this_li).appendTo(dropdown_ul);
+                
                 if(index % 2) {
                     this_li.addClass(settings.classes.dropdownItem);
                 } else {
                     this_li.addClass(settings.classes.dropdownItem2);
                 }
-				if(settings.selectiveColor) {
-					this_li.css('background-color','#'+value.id);
-					this_li.css('color',getTextColor(value.id));
-				}
 
                 if(index === 0) {
                     select_dropdown_item(this_li);
@@ -848,23 +696,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
                 $.data(this_li.get(0), "tokeninput", value);
             });
-			if (settings.bottomText !== null) {
-				var this_li = $('<li class="heading last">'+settings.bottomText+'</li>');
-				if (settings.type === 'search') {
-					var sq = this_li.find('a').attr('href');
-					this_li.find('a').attr('href',sq+query);
-					this_li.appendTo(dropdown_ul);
-				} else {
-					this_li.appendTo(dropdown_ul);
-				}
-			}
 
-            dropdown.html(dropdown_ul);
-            var is_dropdown_hidden = false;
-            if (dropdown.is(':hidden')) {
-                is_dropdown_hidden = true;
-                show_dropdown();
-            }
+            show_dropdown();
 
             if(settings.animateDropdown) {
                 dropdown_ul.slideDown("fast");
