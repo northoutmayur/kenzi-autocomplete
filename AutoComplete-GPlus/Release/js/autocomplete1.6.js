@@ -928,7 +928,9 @@ $.TokenList = function (input, url_or_data, settings) {
             	}
             }
         } else {
-        	 run_search('');
+        	if(settings.invokerText !== null) {
+        		run_search('');
+        	}
         }
     }
 
