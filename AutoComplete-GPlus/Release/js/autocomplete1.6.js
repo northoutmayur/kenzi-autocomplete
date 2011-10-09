@@ -220,15 +220,16 @@ $.TokenList = function (input, url_or_data, settings) {
         })
         .attr("id", settings.idPrefix + input.id)
         .focus(function () {
-			if(settings.linkedText){
+			if(settings.linkedText) {
 				$(this).val('');
                 run_search('');
 			}
             if (settings.showDropdownOnFocus) {
                 run_search('');
-            }
-            else if (settings.tokenLimit === null || settings.tokenLimit !== token_count) {
-                show_dropdown_hint();
+            } else {
+            	if ((settings.invokerText === null) && (settings.tokenLimit === null || settings.tokenLimit !== token_count)) {
+            		show_dropdown_hint();
+            	}
             }
         })
         .blur(function () {
@@ -473,6 +474,7 @@ $.TokenList = function (input, url_or_data, settings) {
                     aLinked.hide();
                     input_box.show();
                     input_box.focus();
+                    
                 });
         }
     };
@@ -485,7 +487,13 @@ $.TokenList = function (input, url_or_data, settings) {
 	        	menuLink.hide();
 	            input_box.show();
 	            input_box.focus();
+	            run_search('');
 	        });
+	    input_token.keypress(function () {
+	    	if(input_token.val().trim() === '') {
+	    		run_search('');
+	    	}
+	    });
     }
     // Pre-populate list if items exist
     hidden_input.val("");
@@ -915,7 +923,9 @@ $.TokenList = function (input, url_or_data, settings) {
                     run_search(query);
                 }, settings.searchDelay);
             } else {
-                hide_dropdown();
+            	if(settings.invokerText === null) {
+            		hide_dropdown();
+            	}
             }
         }
     }
@@ -927,51 +937,64 @@ $.TokenList = function (input, url_or_data, settings) {
         if(cached_results) {
             populate_dropdown(query, cached_results);
         } else {
-            // Are we doing an ajax search or local data search?
-            if(settings.url) {
-                var url = computeURL();
-                // Extract exisiting get params
-                var ajax_params = {};
-                ajax_params.data = {};
-                if(url.indexOf("?") > -1) {
-                    var parts = url.split("?");
-                    ajax_params.url = parts[0];
-
-                    var param_array = parts[1].split("&");
-                    $.each(param_array, function (index, value) {
-                        var kv = value.split("=");
-                        ajax_params.data[kv[0]] = kv[1];
-                    });
-                } else {
-                    ajax_params.url = url;
-                }
-
-                // Prepare the request
-                ajax_params.data[settings.queryParam] = query;
-                ajax_params.type = settings.method;
-                ajax_params.dataType = settings.contentType;
-                if(settings.crossDomain) {
-                    ajax_params.dataType = "jsonp";
-                }
-
-                // Attach the success callback
-                ajax_params.success = function(results) {
-                  if($.isFunction(settings.onResult)) {
-                      results = settings.onResult.call(hidden_input, results);
-                  }
-                  cache.add(cache_key, settings.jsonContainer ? results[settings.jsonContainer] : results);
-
-                  // only populate the dropdown if the results are associated with the active search query
-                  if(input_box.val().toLowerCase() === query) {
-                      populate_dropdown(query, settings.jsonContainer ? results[settings.jsonContainer] : results);
-                  }
-                };
-
-                // Make the request
-                $.ajax(ajax_params);
-            } else if(settings.local_data) {
-                // Do the search through local data
-                var results = $.grep(settings.local_data, function (row) {
+        	if(settings.invokerText === null) {
+	            // Are we doing an ajax search or local data search?
+	            if(settings.url) {
+	                var url = computeURL();
+	                // Extract exisiting get params
+	                var ajax_params = {};
+	                ajax_params.data = {};
+	                if(url.indexOf("?") > -1) {
+	                    var parts = url.split("?");
+	                    ajax_params.url = parts[0];
+	
+	                    var param_array = parts[1].split("&");
+	                    $.each(param_array, function (index, value) {
+	                        var kv = value.split("=");
+	                        ajax_params.data[kv[0]] = kv[1];
+	                    });
+	                } else {
+	                    ajax_params.url = url;
+	                }
+	
+	                // Prepare the request
+	                ajax_params.data[settings.queryParam] = query;
+	                ajax_params.type = settings.method;
+	                ajax_params.dataType = settings.contentType;
+	                if(settings.crossDomain) {
+	                    ajax_params.dataType = "jsonp";
+	                }
+	
+	                // Attach the success callback
+	                ajax_params.success = function(results) {
+	                  if($.isFunction(settings.onResult)) {
+	                      results = settings.onResult.call(hidden_input, results);
+	                  }
+	                  cache.add(cache_key, settings.jsonContainer ? results[settings.jsonContainer] : results);
+	
+	                  // only populate the dropdown if the results are associated with the active search query
+	                  if(input_box.val().toLowerCase() === query) {
+	                      populate_dropdown(query, settings.jsonContainer ? results[settings.jsonContainer] : results);
+	                  }
+	                };
+	
+	                // Make the request
+	                $.ajax(ajax_params);
+	            } else if(settings.local_data) {
+	                // Do the search through local data
+	                var results = $.grep(settings.local_data, function (row) {
+	                    return row[settings.propertyToSearch].toLowerCase().indexOf(query.toLowerCase()) > -1;
+	                });
+	
+	                if($.isFunction(settings.onResult)) {
+	                    results = settings.onResult.call(hidden_input, results);
+	                }
+	                cache.add(cache_key, results);
+	                populate_dropdown(query, results);
+	            }
+	        } else {
+	        	// Do the search through local data
+                var results = $.grep(settings.prePopulateMenu, function (row) {
                     return row[settings.propertyToSearch].toLowerCase().indexOf(query.toLowerCase()) > -1;
                 });
 
@@ -980,7 +1003,7 @@ $.TokenList = function (input, url_or_data, settings) {
                 }
                 cache.add(cache_key, results);
                 populate_dropdown(query, results);
-            }
+	        }
         }
     }
 
