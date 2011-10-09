@@ -309,7 +309,7 @@ $.TokenList = function (input, url_or_data, settings) {
 
                         return false;
                     } else {
-                    	if(setting.invokerText !== null) {
+                    	if(settings.invokerText !== null) {
                     		run_search('');
                     	} else {
 	                    	if($(this).val().length === 1) {
