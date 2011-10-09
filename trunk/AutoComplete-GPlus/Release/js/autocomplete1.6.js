@@ -308,11 +308,17 @@ $.TokenList = function (input, url_or_data, settings) {
                         }
 
                         return false;
-                    } else if($(this).val().length === 1) {
-                        hide_dropdown();
                     } else {
-                        // set a timeout just long enough to let this function finish.
-                        setTimeout(function(){do_search();}, 5);
+                    	if(setting.invokerText !== null) {
+                    		run_search('');
+                    	} else {
+	                    	if($(this).val().length === 1) {
+		                        hide_dropdown();
+		                    } else {
+		                        // set a timeout just long enough to let this function finish.
+		                        setTimeout(function(){do_search();}, 5);
+		                    }
+                    	}
                     }
                     break;
 
@@ -474,7 +480,6 @@ $.TokenList = function (input, url_or_data, settings) {
                     aLinked.hide();
                     input_box.show();
                     input_box.focus();
-                    
                 });
         }
     };
@@ -489,11 +494,6 @@ $.TokenList = function (input, url_or_data, settings) {
 	            input_box.focus();
 	            run_search('');
 	        });
-	    input_token.keypress(function () {
-	    	if(input_token.val().trim() === '') {
-	    		run_search('');
-	    	}
-	    });
     }
     // Pre-populate list if items exist
     hidden_input.val("");
@@ -909,7 +909,7 @@ $.TokenList = function (input, url_or_data, settings) {
     // than settings.minChars
     function do_search() {
         var query = input_box.val().toLowerCase();
-
+        
         if(query && query.length) {
             if(selected_token) {
                 deselect_token($(selected_token), POSITION.AFTER);
@@ -927,6 +927,8 @@ $.TokenList = function (input, url_or_data, settings) {
             		hide_dropdown();
             	}
             }
+        } else {
+        	 run_search('');
         }
     }
 
