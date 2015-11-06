@@ -1,0 +1,1 @@
+Customize jquery token input plugin, add some more setting attributes.
